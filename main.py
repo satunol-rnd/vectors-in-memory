@@ -7,6 +7,7 @@ from langchain_community.vectorstores import FAISS
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain import hub
+from langchain.prompts import PromptTemplate
 
 load_dotenv()
 
@@ -27,6 +28,13 @@ def initialize_vectorstore(pdf_path, embeddings):
     return FAISS.load_local(
         "faiss_index_react", embeddings, allow_dangerous_deserialization=True
     )
+def create_chat_history(memory):
+    if len(memory) == 0:
+        return "no chat history yet"
+    # format key as Q and value as A from 2 last items in memory
+    memory = dict(list(memory.items())[-2:])
+    l = [f"HUMAN\n{key}\n\nSYSTEM\n{value}" for key, value in memory.items()]
+    return "\n\n".join(l)
 
 def main():
     embeddings = OpenAIEmbeddings()
@@ -34,23 +42,53 @@ def main():
     pdf_path = os.path.dirname(current_file_path)
     vectorstore = initialize_vectorstore(pdf_path, embeddings)
 
-    retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
+    template = """
+SYSTEM
+You are a nice chatbot having a conversation with a human.
+Answer any use questions based solely on the context below:
+
+<context>
+{context}
+</context>
+
+PLACEHOLDER
+{chat_history}
+
+HUMAN
+{input}
+    """
+
+    retrieval_qa_chat_prompt = PromptTemplate.from_template(template=template).partial(
+        chat_history="no chat history yet",
+    )
+
+    # retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
     combine_docs_chain = create_stuff_documents_chain(OpenAI(), retrieval_qa_chat_prompt)
     retrieval_chain = create_retrieval_chain(vectorstore.as_retriever(), combine_docs_chain)
 
-    # memory = {}
+    memory = {}
 
     while True:
+        print("---------------------------------------------------------------------")
         user_input = input("Ask a question (or type 'exit' to quit): ")
         if user_input.lower() == 'exit':
             break
         
-        res = retrieval_chain.invoke({"input": user_input})
-        answer = res["answer"]
+        res = retrieval_chain.invoke({"input": user_input, "chat_history": create_chat_history(memory)})
+        answer = res["answer"].strip()
+
+        # Storing context in memory, check if answer starts with "SYSTEM" if yes remove it
+        if answer.startswith("SYSTEM"):
+            answer = answer[6:]
+            answer = answer.strip()
+
+        memory[user_input] = answer
+        print("---------------------------------------------------------------------")
         print(answer)
+        print("----------------chat history:----------------------------------------\n")
+        print(res['chat_history'])
         
-        # Storing context in memory
-        # memory[user_input] = answer
+        
 
 if __name__ == "__main__":
     main()
