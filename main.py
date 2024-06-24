@@ -46,7 +46,8 @@ if __name__ == "__main__":
         new_vectorstore.as_retriever(), combine_docs_chain
     )
 
-    res = retrieval_chain.invoke({"input": "what is the context about?"})
+    # res = retrieval_chain.invoke({"input": "what is the context about?"})
     # res = retrieval_chain.invoke({"input": "Give me the gist of ReAct in 3 sentences"})
     # res = retrieval_chain.invoke({"input": "Give me conclusion about context"})
+    res = retrieval_chain.invoke({"input": "Explain ReAct"})
     print(res["answer"])
