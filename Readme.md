@@ -1,7 +1,7 @@
 # Getting Started
 
 ```
-pipenv install langchain pypdf langchain-openai langchain-community langchainhub faiss-cpu black
+pipenv install langchain pypdf langchain-openai langchain-community langchainhub faiss-cpu black langchain-mistralai
 ```
 
 ## ABout This Project

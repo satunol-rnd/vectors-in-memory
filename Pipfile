@@ -12,6 +12,7 @@ langchainhub = "*"
 faiss-cpu = "*"
 black = "*"
 python-dotenv = "*"
+langchain-mistralai = "*"
 
 [dev-packages]
 
