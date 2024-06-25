@@ -14,7 +14,8 @@ load_dotenv()
 def initialize_vectorstore(pdf_path, embeddings):
     if not os.path.exists(pdf_path + "/faiss_index_react"):
         print("Creating FAISS index")
-        loader = PyPDFLoader(file_path=pdf_path + "/2210.03629v3.pdf")
+        # loader = PyPDFLoader(file_path=pdf_path + "/2210.03629v3.pdf")
+        loader = PyPDFLoader(file_path=pdf_path + "/BA_SINEC-NMS_76_en-US.pdf")
         documents = loader.load()
         text_splitter = CharacterTextSplitter(
             chunk_size=1000, chunk_overlap=30, separator="\n"
@@ -33,7 +34,7 @@ def create_chat_history(memory):
         return "no chat history yet"
     # format key as Q and value as A from 2 last items in memory
     memory = dict(list(memory.items())[-2:])
-    l = [f"HUMAN\n{key}\n\nSYSTEM\n{value}" for key, value in memory.items()]
+    l = [f"HUMAN\n{key}\n\nCHATBOT\n{value}" for key, value in memory.items()]
     return "\n\n".join(l)
 
 def main():
@@ -43,15 +44,15 @@ def main():
     vectorstore = initialize_vectorstore(pdf_path, embeddings)
 
     template = """
-SYSTEM
-You are a nice chatbot having a conversation with a human.
+You are a nice chatbot identified as CHATBOT. 
+You are having a conversation with a human.
 Answer any use questions based solely on the context below:
 
 <context>
 {context}
 </context>
 
-PLACEHOLDER
+Chat History:
 {chat_history}
 
 HUMAN
@@ -69,7 +70,7 @@ HUMAN
     memory = {}
 
     while True:
-        print("---------------------------------------------------------------------")
+        print("\n\n---------------------------------------------------------------------")
         user_input = input("Ask a question (or type 'exit' to quit): ")
         if user_input.lower() == 'exit':
             break
@@ -81,10 +82,13 @@ HUMAN
         if answer.startswith("SYSTEM"):
             answer = answer[6:]
             answer = answer.strip()
+        elif answer.startswith("CHATBOT"):
+            answer = answer[8:]
+            answer = answer.strip()
 
         memory[user_input] = answer
         print("---------------------------------------------------------------------")
-        print(answer)
+        print("CHATBOT:\n", answer)
         print("----------------chat history:----------------------------------------\n")
         print(res['chat_history'])
         
